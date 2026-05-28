@@ -9,10 +9,10 @@ if (window.VANTA && document.getElementById('vanta-bg')) {
     minWidth: 200.0,
     scale: 1.0,
     scaleMobile: 1.0,
-    color: 0x2fbf71,
+    color: 0x356b4f,
     backgroundColor: 0x0b0f0c,
-    points: 13.0,
-    maxDistance: 23.0
+    points: 10.0,
+    maxDistance: 20.0
   });
 }
 
