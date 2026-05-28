@@ -1,3 +1,21 @@
+// Vanta NET background
+if (window.VANTA && document.getElementById('vanta-bg')) {
+  VANTA.NET({
+    el: '#vanta-bg',
+    mouseControls: true,
+    touchControls: true,
+    gyroControls: false,
+    minHeight: 200.0,
+    minWidth: 200.0,
+    scale: 1.0,
+    scaleMobile: 1.0,
+    color: 0x2fbf71,
+    backgroundColor: 0x0b0f0c,
+    points: 13.0,
+    maxDistance: 23.0
+  });
+}
+
 // Year
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();

@@ -43,13 +43,8 @@ img { max-width: 100%; display: block; }
 .accent { color: var(--accent); }
 
 /* ============ Decorative background ============ */
-.bg-grid {
+#vanta-bg {
   position: fixed; inset: 0; z-index: -2;
-  background-image:
-    linear-gradient(rgba(47, 191, 113, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(47, 191, 113, 0.05) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at top, black 30%, transparent 70%);
 }
 .bg-blob {
   position: fixed; z-index: -1;
