@@ -10,7 +10,7 @@ if (window.VANTA && document.getElementById('vanta-bg')) {
     scale: 1.0,
     scaleMobile: 1.0,
     color: 0x356b4f,
-    backgroundColor: 0x0b0f0c,
+    backgroundColor: 0x000000,
     points: 6.0,
     maxDistance: 16.0
   });

@@ -1,7 +1,7 @@
 /* ============ Tokens ============ */
 :root {
-  --bg: #0b0f0c;
-  --bg-2: #0f1612;
+  --bg: #000000;
+  --bg-2: #000000;
   --surface: #131b16;
   --surface-2: #182219;
   --border: rgba(255, 255, 255, 0.08);
@@ -46,16 +46,6 @@ img { max-width: 100%; display: block; }
 #vanta-bg {
   position: fixed; inset: 0; z-index: -2;
 }
-.bg-blob {
-  position: fixed; z-index: -1;
-  width: 600px; height: 600px;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
-  pointer-events: none;
-}
-.blob-1 { background: var(--accent); top: -200px; right: -150px; }
-.blob-2 { background: #1a8a4f; bottom: -250px; left: -200px; }
 
 /* ============ Nav ============ */
 .nav {
