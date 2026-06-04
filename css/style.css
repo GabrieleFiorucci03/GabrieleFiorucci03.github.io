@@ -690,6 +690,11 @@ img { max-width: 100%; display: block; }
   color: var(--accent-2);
   border: 1px solid rgba(47, 191, 113, 0.3);
 }
+.status-done {
+  background: rgba(110, 231, 163, 0.12);
+  color: var(--accent-2);
+  border: 1px solid rgba(110, 231, 163, 0.3);
+}
 .status-planned {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-muted);
