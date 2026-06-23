@@ -43,24 +43,20 @@ img { max-width: 100%; display: block; }
 .accent { color: var(--accent); }
 
 /* ============ Decorative background ============ */
-/* Soft green spotlight that gently follows the cursor. No JS lib, no Three.js. */
-#bg-glow {
+/* Animated "LiquidChrome" effect (React Bits) ported to a vanilla WebGL canvas.
+   Falls back to the flat bg color if WebGL is unavailable; renders a single
+   static frame under reduced-motion. */
+#bg-fx {
   position: fixed;
   inset: 0;
   z-index: -2;
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
   background-color: var(--bg);
-  /* --mx / --my are updated by main.js (eased toward the pointer). */
-  --mx: 50%;
-  --my: 14%;
-}
-#bg-glow::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(640px circle at var(--mx) var(--my), rgba(47, 191, 113, 0.16), transparent 68%),
-    radial-gradient(900px circle at 85% 110%, rgba(47, 191, 113, 0.05), transparent 60%);
+  /* Hold the effect back so it reads as ambient texture, not a foreground layer. */
+  opacity: 0.5;
 }
 
 /* ============ Nav ============ */
