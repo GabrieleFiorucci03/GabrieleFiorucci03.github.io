@@ -105,14 +105,29 @@
   let W = 0, H = 0;
   const resize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = Math.round(window.innerWidth * dpr);
-    H = Math.round(window.innerHeight * dpr);
+    // Measure from the fixed canvas' CSS box rather than window.innerHeight.
+    // On mobile the browser's URL bar shows/hides on scroll, which changes
+    // innerHeight and would otherwise reallocate the GL buffer + shift the
+    // shader's aspect ratio, causing a visible glitch. The fixed element's
+    // client size is resolved against the (stable) large viewport instead.
+    const cssW = canvas.clientWidth || window.innerWidth;
+    const cssH = canvas.clientHeight || window.innerHeight;
+    const nextW = Math.round(cssW * dpr);
+    const nextH = Math.round(cssH * dpr);
+    // Skip redundant work when the real pixel size hasn't changed (e.g. a
+    // resize event fired only because the mobile toolbar toggled).
+    if (nextW === W && nextH === H) return;
+    W = nextW; H = nextH;
     canvas.width = W; canvas.height = H;
     gl.viewport(0, 0, W, H);
     gl.uniform3f(u.res, W, H, W / H);
   };
   resize();
-  window.addEventListener('resize', resize);
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 150);
+  });
 
   // mouse/touch interaction — normalized 0..1, y flipped (matches the original)
   if (interactive && (finePointer || 'ontouchstart' in window)) {
