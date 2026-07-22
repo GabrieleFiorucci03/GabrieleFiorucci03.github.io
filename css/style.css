@@ -43,9 +43,10 @@ img { max-width: 100%; display: block; }
 .accent { color: var(--accent); }
 
 /* ============ Decorative background ============ */
-/* Animated "LiquidChrome" effect (React Bits) ported to a vanilla WebGL canvas.
-   Falls back to the flat bg color if WebGL is unavailable; renders a single
-   static frame under reduced-motion. */
+/* Animated "ElectricMist" effect (React Three Fiber) ported to a vanilla WebGL
+   canvas and recolored to the site's green palette. Falls back to the flat bg
+   color if WebGL is unavailable; renders a single static frame under
+   reduced-motion. */
 #bg-fx {
   position: fixed;
   inset: 0;
@@ -55,8 +56,9 @@ img { max-width: 100%; display: block; }
   display: block;
   pointer-events: none;
   background-color: var(--bg);
-  /* Hold the effect back so it reads as ambient texture, not a foreground layer. */
-  opacity: 0.5;
+  /* Hold the effect well back so it reads as a faint ambient sub-layer, never a
+     foreground element. */
+  opacity: 0.18;
 }
 
 /* ============ Nav ============ */
@@ -362,17 +364,21 @@ img { max-width: 100%; display: block; }
 .edu-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
+  gap: 1.5rem;
 }
 .edu-card {
-  background: transparent;
-  border: none;
-  border-left: 1px solid var(--border);
-  border-radius: 0;
-  padding: .25rem 1.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
   position: relative;
+  transition: transform .25s, border-color .25s, background .25s;
 }
-.edu-card:first-child { border-left: none; padding-left: 0; }
+.edu-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(47, 191, 113, 0.4);
+  background: var(--surface-2);
+}
 .edu-card.highlight h3 { color: var(--accent-2); }
 .edu-tag {
   position: absolute; top: 1rem; right: 1rem;
@@ -736,8 +742,6 @@ img { max-width: 100%; display: block; }
   .more-grid { grid-template-columns: 1fr; }
 
   .edu-grid { grid-template-columns: 1fr; }
-  .edu-card { border-left: none; border-top: 1px solid var(--border); padding: 1.25rem 0; }
-  .edu-card:first-child { border-top: none; padding-top: 0; }
 
   .activity-grid { grid-template-columns: 1fr; }
   .activity-grid .act-card-lg,

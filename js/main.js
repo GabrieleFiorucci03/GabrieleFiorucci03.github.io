@@ -1,73 +1,107 @@
-// Animated "LiquidChrome" background (ported from the React Bits component to
-// vanilla WebGL — same fragment shader, no ogl/build step). Tinted with the
-// site's green palette via baseColor. Degrades to the flat dark bg if WebGL is
-// missing; under reduced-motion it renders one static frame (no animation).
-(function initLiquidChrome() {
+// Animated "ElectricMist" background (ported from the React Three Fiber
+// component to vanilla WebGL — same fbm/fragment shader, no three.js/build
+// step). Recolored from the original midnight-blue (#191970) into the site's
+// green palette via uColor. Degrades to the flat dark bg if WebGL is missing;
+// under reduced-motion it renders one static frame (no animation).
+(function initElectricMist() {
   const canvas = document.getElementById('bg-fx');
   if (!canvas) return;
-  const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
   if (!gl) return; // CSS background-color stays as the fallback
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const finePointer = window.matchMedia('(pointer: fine)').matches;
 
-  // Props (mirrors the React component's API), tuned for a dark green theme.
-  // Kept deliberately subdued so the effect reads as ambient texture, not a
-  // foreground element: dim base color, calm amplitude, slow speed.
-  const baseColor = [0.016, 0.055, 0.032]; // very dark green -> soft, low highlights
-  const speed = 0.35;
-  const amplitude = 0.32;
-  const frequencyX = 2.5;
-  const frequencyY = 1.5;
-  const interactive = true;
+  // Props (mirror the React component's API), tuned for the dark green theme.
+  // The original used a vivid midnight blue; here uColor is a deep emerald
+  // (~half-intensity of the site's --accent #2fbf71) so the electric striations
+  // land in-palette. Speed kept calm so it reads as ambient texture.
+  const color = [0.007, 0.185, 0.030]; // strongly green — vivid green wisps
+  const speed = 0.2; // very slow, calm motion
+  const detail = 1.5;
+  const distortion = 3.0;
+  const brightness = 3.9; // higher => deep near-black base, very faint effect
 
+  // Full-screen triangle; vUv reconstructed from clip position in the vert.
   const vsrc = `
     attribute vec2 position;
-    void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+    varying vec2 vUv;
+    void main() {
+      vUv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0.0, 1.0);
+    }`;
 
-  // Fragment shader copied from the React Bits LiquidChrome component; vUv is
-  // derived from gl_FragCoord here instead of a vertex varying.
+  // Fragment shader ported from the ElectricMist component (uSpeed folded into
+  // uTime on the JS side, so it is not sampled here).
   const fsrc = `
     precision highp float;
     uniform float uTime;
-    uniform vec3 uResolution;
-    uniform vec3 uBaseColor;
-    uniform float uAmplitude;
-    uniform float uFrequencyX;
-    uniform float uFrequencyY;
-    uniform vec2 uMouse;
+    uniform vec2 uResolution;
+    uniform vec3 uColor;
+    uniform float uDetail;
+    uniform float uDistortion;
+    uniform float uBrightness;
+    varying vec2 vUv;
 
-    vec4 renderImage(vec2 uvCoord) {
-        vec2 fragCoord = uvCoord * uResolution.xy;
-        vec2 uv = (2.0 * fragCoord - uResolution.xy) / min(uResolution.x, uResolution.y);
+    #define time uTime * 0.2
 
-        for (float i = 1.0; i < 10.0; i++){
-            uv.x += uAmplitude / i * cos(i * uFrequencyX * uv.y + uTime + uMouse.x * 3.14159);
-            uv.y += uAmplitude / i * cos(i * uFrequencyY * uv.x + uTime + uMouse.y * 3.14159);
+    mat2 makem2(in float theta){
+        float c = cos(theta);
+        float s = sin(theta);
+        return mat2(c,-s,s,c);
+    }
+
+    float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float noise( in vec2 x, float detail ){
+        x *= detail;
+        vec2 p = floor(x);
+        vec2 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash(p + vec2(0.0, 0.0));
+        float b = hash(p + vec2(1.0, 0.0));
+        float c = hash(p + vec2(0.0, 1.0));
+        float d = hash(p + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    mat2 m2 = mat2( 0.80,  0.60, -0.60,  0.80 );
+
+    float fbm( in vec2 p, float detail, int octaves )
+    {
+        float z=2.;
+        float rz = 0.;
+        for (int i= 0; i < 7; i++ )
+        {
+            if(i >= octaves) break;
+            rz += abs((noise(p, detail)-0.5)*4.)/z;
+            z = z*2.;
+            p = p*2.;
+            p *= m2;
         }
-
-        vec2 diff = (uvCoord - uMouse);
-        float dist = length(diff);
-        float falloff = exp(-dist * 20.0);
-        float ripple = sin(10.0 * dist - uTime * 2.0) * 0.03;
-        uv += (diff / (dist + 0.0001)) * ripple * falloff;
-
-        vec3 color = uBaseColor / abs(sin(uTime - uv.y - uv.x));
-        return vec4(color, 1.0);
+        return rz;
     }
 
     void main() {
-        vec2 vUv = gl_FragCoord.xy / uResolution.xy;
-        vec4 col = vec4(0.0);
-        int samples = 0;
-        for (int i = -1; i <= 1; i++){
-            for (int j = -1; j <= 1; j++){
-                vec2 offset = vec2(float(i), float(j)) * (1.0 / min(uResolution.x, uResolution.y));
-                col += renderImage(vUv + offset);
-                samples++;
-            }
-        }
-        gl_FragColor = col / float(samples);
+        vec2 p = vUv * 2.0 - 1.0;
+        p.x *= uResolution.x/uResolution.y;
+        vec2 bp = p;
+        p += 5.;
+        p *= 0.5;
+
+        float rb = fbm(p*.5 + time*.17, uDetail, 3) * .1;
+        p *= makem2(rb*.2 + atan(p.y,p.x) * uDistortion);
+
+        float rz = fbm(p*.9 - time*.7, uDetail, 5);
+
+        rz *= 12.0;
+
+        rz *= abs(sin(bp.x*0.5 - time*4.0 - 2.0)) * 1.0;
+
+        vec3 col = uColor / (uBrightness - rz);
+
+        gl_FragColor = vec4(sqrt(abs(col)), 1.0);
     }`;
 
   const compile = (type, src) => {
@@ -91,16 +125,14 @@
 
   const U = name => gl.getUniformLocation(prog, name);
   const u = {
-    time: U('uTime'), res: U('uResolution'), base: U('uBaseColor'),
-    amp: U('uAmplitude'), freqX: U('uFrequencyX'), freqY: U('uFrequencyY'),
-    mouse: U('uMouse'),
+    time: U('uTime'), res: U('uResolution'), color: U('uColor'),
+    detail: U('uDetail'), distortion: U('uDistortion'), brightness: U('uBrightness'),
   };
 
-  gl.uniform3fv(u.base, baseColor);
-  gl.uniform1f(u.amp, amplitude);
-  gl.uniform1f(u.freqX, frequencyX);
-  gl.uniform1f(u.freqY, frequencyY);
-  gl.uniform2f(u.mouse, 0, 0);
+  gl.uniform3fv(u.color, color);
+  gl.uniform1f(u.detail, detail);
+  gl.uniform1f(u.distortion, distortion);
+  gl.uniform1f(u.brightness, brightness);
 
   let W = 0, H = 0;
   const resize = () => {
@@ -120,7 +152,7 @@
     W = nextW; H = nextH;
     canvas.width = W; canvas.height = H;
     gl.viewport(0, 0, W, H);
-    gl.uniform3f(u.res, W, H, W / H);
+    gl.uniform2f(u.res, W, H);
   };
   resize();
   let resizeTimer;
@@ -129,20 +161,9 @@
     resizeTimer = setTimeout(resize, 150);
   });
 
-  // mouse/touch interaction — normalized 0..1, y flipped (matches the original)
-  if (interactive && (finePointer || 'ontouchstart' in window)) {
-    const setMouse = (clientX, clientY) => {
-      gl.uniform2f(u.mouse, clientX / window.innerWidth, 1 - clientY / window.innerHeight);
-    };
-    window.addEventListener('mousemove', e => setMouse(e.clientX, e.clientY), { passive: true });
-    window.addEventListener('touchmove', e => {
-      if (e.touches.length) setMouse(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-  }
-
   const start = performance.now();
   const render = now => {
-    gl.uniform1f(u.time, reduceMotion ? 0.35 : (now - start) * 0.001 * speed);
+    gl.uniform1f(u.time, reduceMotion ? 2.0 : (now - start) * 0.001 * speed);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!reduceMotion) requestAnimationFrame(render);
   };
