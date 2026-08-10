@@ -15,11 +15,11 @@
   // The original used a vivid midnight blue; here uColor is a deep emerald
   // (~half-intensity of the site's --accent #2fbf71) so the electric striations
   // land in-palette. Speed kept calm so it reads as ambient texture.
-  const color = [0.007, 0.185, 0.030]; // strongly green — vivid green wisps
-  const speed = 0.2; // very slow, calm motion
+  const color = [0.004, 0.095, 0.016]; // deep muted green — barely-there wisps
+  const speed = 0.04; // glacial drift; the motion should never draw the eye
   const detail = 1.5;
   const distortion = 3.0;
-  const brightness = 3.9; // higher => deep near-black base, very faint effect
+  const brightness = 7.5; // higher => deep near-black base, very faint effect
 
   // Full-screen triangle; vUv reconstructed from clip position in the vert.
   const vsrc = `
