@@ -256,6 +256,9 @@ window.FiorucciIntro={create:create,play:play,state:state,geo:G,duration:DUR};
   // System "reduce motion": no intro (head script), no self-rolling gallery, no autoplaying videos.
   const STILL = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SPEED = 80, LENS = 0.6, STRIP = 0.6;   // gallery: px/s, lens curvature, strip height (share of the band)
+  // Phones only (up to 720px, like the mobile menu): the strip is at most this share of the width, so several tiles
+  // show as on desktop instead of one tile wider than the screen. Wider screens are unchanged.
+  const STRIP_MAX_W = 1 / 2.3, PHONE = matchMedia('(max-width: 720px)');
 
   // Intro: the logo animation plays once per browser session (the <head> script decides and hides the page
   // meanwhile with .intro-pending), then the home hero and gallery fade in.
@@ -295,7 +298,7 @@ window.FiorucciIntro={create:create,play:play,state:state,geo:G,duration:DUR};
     // Videos (preload="none") are only fetched and played once their tile is on screen; until a video has a frame the
     // tile draws its poster, or the striped placeholder if that hasn't loaded either.
     const geom = () => {
-      const W = band.clientWidth, H = band.clientHeight, stripH = H * STRIP;
+      const W = band.clientWidth, H = band.clientHeight, stripH = PHONE.matches ? Math.min(H * STRIP, W * STRIP_MAX_W) : H * STRIP;
       const imgs = vids.map((v, i) => {
         if (!v) return null;
         const on = !STILL && !!(vis && vis[i]);
@@ -314,6 +317,8 @@ window.FiorucciIntro={create:create,play:play,state:state,geo:G,duration:DUR};
       roll.vel *= Math.pow(0.03, dt);
       // Nothing to draw while the intro covers the page: the gallery is still invisible.
       if (!home.classList.contains('entered')) { requestAnimationFrame(tick); return; }
+      // Scrolled past the gallery: stop drawing and pause its videos until it's back on screen.
+      if (band.getBoundingClientRect().bottom <= 0) { vids.forEach(v => v && !v.paused && v.pause()); vis = null; requestAnimationFrame(tick); return; }
       lastGeom = geom();
       vis = gl.render({ ...lastGeom, dpr: Math.min(1.5, window.devicePixelRatio || 1), ca: 0, hover, dim: 0.55 });
       requestAnimationFrame(tick);
@@ -331,9 +336,19 @@ window.FiorucciIntro={create:create,play:play,state:state,geo:G,duration:DUR};
       if (dragged) { dragged = false; return; }
       if (hover != null) location.href = links[hover].href;
     });
+    // The wheel rolls the strip only with the pointer on a tile (or when scrolling sideways); anywhere else it scrolls
+    // the page down to the section below. A gesture keeps its target until the wheel pauses, so the strip sliding
+    // under the pointer while the page scrolls doesn't catch it.
+    let wheelOnStrip = false, wheelT = 0;
     band.addEventListener('wheel', (e) => {
-      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      e.preventDefault(); roll.vel += d * 0.9;
+      const side = Math.abs(e.deltaX) > Math.abs(e.deltaY), now = performance.now();
+      if (now - wheelT > 250) {
+        const b = band.getBoundingClientRect();
+        wheelOnStrip = side || (!!lastGeom && FLGallery.hit(lastGeom, e.clientX - b.left, e.clientY - b.top) != null);
+      }
+      wheelT = now;
+      if (!wheelOnStrip) return;
+      e.preventDefault(); roll.vel += (side ? e.deltaX : e.deltaY) * 0.9;
     }, { passive: false });
     window.addEventListener('pointerdown', (e) => {
       if (!band.contains(e.target) || e.button > 0) return;
@@ -353,6 +368,20 @@ window.FiorucciIntro={create:create,play:play,state:state,geo:G,duration:DUR};
       if (dragged) { const idle = performance.now() - d.t; roll.vel = idle > 80 ? 0 : Math.max(-6000, Math.min(6000, d.v)); band.style.cursor = cursor(); }
     };
     window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  }
+
+  // Home: the closing question lights up word by word while it scrolls into view (all at once at the bottom of the
+  // page, or with "reduce motion").
+  const askWords = [...document.querySelectorAll('.hab-ask-h span')];
+  if (askWords.length) {
+    const ask = askWords[0].parentNode;
+    const light = () => {
+      const top = ask.getBoundingClientRect().top, H = innerHeight;
+      const atEnd = scrollY + H >= document.documentElement.scrollHeight - 2;
+      const p = STILL || atEnd ? 1 : (H * 0.9 - top) / (H * 0.3);
+      askWords.forEach((w, i) => w.classList.toggle('on', p > i / askWords.length));
+    };
+    addEventListener('scroll', light, { passive: true }); addEventListener('resize', light); light();
   }
 
   // Dropdowns (<details>): a click outside closes the open one and does nothing else (so a tap outside the mobile
